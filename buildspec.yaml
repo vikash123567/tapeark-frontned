@@ -1,0 +1,38 @@
+version: 0.2
+phases:
+  install:
+    commands:
+      - yum install -y jq
+      - yum install -y unzip
+      #- export SONAR_SCANNER_VERSION=5.0.1.3006
+      #- export SONAR_SCANNER_HOME=$HOME/.sonar/sonar-scanner-$SONAR_SCANNER_VERSION-linux
+      #- curl --create-dirs -sSLo $HOME/.sonar/sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-$SONAR_SCANNER_VERSION-linux.zip
+      #- unzip -o $HOME/.sonar/sonar-scanner.zip -d $HOME/.sonar/
+      #- export PATH=$SONAR_SCANNER_HOME/bin:$PATH
+      #- export SONAR_SCANNER_OPTS="-server"
+  pre_build:
+    commands:
+      - echo Logging starting build ...
+      - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 470725884099.dkr.ecr.us-east-1.amazonaws.com
+  build:
+    commands:
+      - echo Build started on `date`
+      #- echo Building the ui Docker image...          
+      - docker build -t sample .
+      - docker tag sample:latest 470725884099.dkr.ecr.us-east-1.amazonaws.com/sample:$CODEBUILD_BUILD_NUMBER
+      - docker tag sample:latest 470725884099.dkr.ecr.us-east-1.amazonaws.com/sample:latest
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - echo Pushing the Docker image...
+      - docker push 470725884099.dkr.ecr.us-east-1.amazonaws.com/sample:$CODEBUILD_BUILD_NUMBER
+      - docker push 470725884099.dkr.ecr.us-east-1.amazonaws.com/sample:latest
+      #- echo Writing image definitions file...
+      #- printf '[{"name":"nodejs","imageUri":"%s"}]' 872599169723.dkr.ecr.ap-south-1.amazonaws.com/minfy-devops:$CODEBUILD_BUILD_NUMBER > imagedefinitions.json
+      #- echo Running SonarQube analysis...
+      #- sonar-scanner -Dsonar.organization=sonar-karamyogi -Dsonar.projectKey=sonar-karamyogi_sonar-karamyogi -Dsonar.sources=. -Dsonar.host.url=https://sonarcloud.io -Dsonar.login=dd8e7801ccc861d4756d172cc2d89f28cafa6a5a
+      
+
+#artifacts:
+#  files: 
+#    - 'imagedefinitions.json'
